@@ -75,11 +75,12 @@ Adafruit_NeoPixel  strip = Adafruit_NeoPixel(NUM_PIXELS, PIN_LED_STRIP, NEO_GRB 
 Ultrasonic         ultrasonic(10);
 
 
-int score = 0;
-int isFunRunning = 0;
-int FAN_SPEED = 0;
-int MAX_DISTANCE = 17;
+int score              = 0;
+int isFunRunning       = 0;
+int FAN_SPEED          = 0;
+int MAX_DISTANCE       = 17;
 boolean EMERGENCY_STOP = false;
+#define MAX_SCORE         1023
 
  
 void setup() {
@@ -129,11 +130,11 @@ void loop() {
   flooding    = (DATA_TYPE) analogRead(FLOODING_PIN);
   pumpFlux    = (DATA_TYPE) getFakeAirFlow( score );
 
-  VALUE_PUMP_RPM      = (DATA_TYPE) pumpRpm;
-  VALUE_PUMP_NOVELTY  = (DATA_TYPE) pumpNovelty;
+  VALUE_PUMP_RPM      = (DATA_TYPE) (pumpRpm >> 2 );
+  VALUE_PUMP_NOVELTY  = (DATA_TYPE) (pumpNovelty >> 2);
   VALUE_PUMP_TEMP     = (DATA_TYPE) pumpTemp;
-  VALUE_PUMP_CURRENT  = (DATA_TYPE) pumpCurrent;
-  VALUE_PUMP_FLUX     = (DATA_TYPE) pumpFlux;
+  VALUE_PUMP_CURRENT  = (DATA_TYPE) (pumpCurrent >> 2);
+  VALUE_PUMP_FLUX     = (DATA_TYPE) (pumpFlux >> 2);
   VALUE_ENV_TEMP      = (DATA_TYPE) extTemp;
   VALUE_ENV_HUM       = (DATA_TYPE) extHum;
   VALUE_FLOODING      = (DATA_TYPE) (flooding >> 2);
@@ -151,7 +152,9 @@ int updateScore(int distance){
     score += ((int)(float)obclusion * NOVELTY_FACTOR);
   else
     score -= SCORE_DECREASE;
+    
   if(score < 0)   score = 0; 
+  if(score > MAX_SCORE) score = MAX_SCORE;
 /*
   Serial.print("dist: ");
   Serial.print(dist);
@@ -366,5 +369,3 @@ int setFanSpeed(int fanSpeed){
 int setFlameLight(int flameColor){
   return 0;
 }
-
-
