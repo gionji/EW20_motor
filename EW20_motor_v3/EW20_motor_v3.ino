@@ -80,8 +80,14 @@ int isFunRunning       = 0;
 int FAN_SPEED          = 0;
 int MAX_DISTANCE       = 17;
 boolean EMERGENCY_STOP = false;
+
 #define MAX_SCORE         1023
 
+#define FLOW_SPEED_2    520
+#define FLOW_SPEED_1    405
+
+#define CONSUMPTION_SPEED_2    60
+#define CONSUMPTION_SPEED_1    30  
  
 void setup() {
   Serial.begin(115200);
@@ -115,29 +121,53 @@ void loop() {
   // Sensors update
   int dist = ultrasonic.MeasureInCentimeters();
   sensors.requestTemperatures();
-  double Irms = getFakePowerConsumption();
 
   updateScore( dist );
 
   systemDynamics();
 
-  pumpRpm     = (DATA_TYPE) getFakeAirFlow( score );;
+  pumpRpm     = (DATA_TYPE) getFakeAirFlow( score );
   pumpNovelty = (DATA_TYPE) getNovelty( score );
-  pumpCurrent = (DATA_TYPE) Irms;
+  pumpCurrent = (DATA_TYPE) getFakePowerConsumption(score);
   pumpTemp    = (DATA_TYPE) sensors.getTempCByIndex(0);
   extTemp     = (DATA_TYPE) dht.readTemperature(); // DHT11
   extHum      = (DATA_TYPE) dht.readHumidity(); //  DHT11
   flooding    = (DATA_TYPE) analogRead(FLOODING_PIN);
   pumpFlux    = (DATA_TYPE) getFakeAirFlow( score );
 
-  VALUE_PUMP_RPM      = (DATA_TYPE) (pumpRpm >> 2 );
-  VALUE_PUMP_NOVELTY  = (DATA_TYPE) (pumpNovelty >> 2);
+  
+  Serial.print("SPEED:  ");
+  Serial.print(FAN_SPEED); 
+  Serial.print("   score: ");
+  Serial.print(score); 
+  Serial.print("   flow: ");
+  Serial.print(pumpFlux);
+  Serial.print("   pumpNovelty: ");
+  Serial.print(pumpNovelty);
+  Serial.print("   pumpCurrent ");
+  Serial.println(pumpCurrent);
+
+  VALUE_PUMP_RPM      = (DATA_TYPE) (pumpRpm     >> 2 );
+  VALUE_PUMP_NOVELTY  = (DATA_TYPE) (pumpNovelty >> 0);
   VALUE_PUMP_TEMP     = (DATA_TYPE) pumpTemp;
   VALUE_PUMP_CURRENT  = (DATA_TYPE) (pumpCurrent >> 2);
   VALUE_PUMP_FLUX     = (DATA_TYPE) (pumpFlux >> 2);
   VALUE_ENV_TEMP      = (DATA_TYPE) extTemp;
   VALUE_ENV_HUM       = (DATA_TYPE) extHum;
   VALUE_FLOODING      = (DATA_TYPE) (flooding >> 2);
+
+/*
+  Serial.print("SPEED:  ");
+  Serial.print(FAN_SPEED); 
+  Serial.print("   score: ");
+  Serial.print(score); 
+  Serial.print("   flow: ");
+  Serial.print(pumpFlux);
+  Serial.print("   pumpNovelty: ");
+  Serial.print(pumpNovelty);
+  Serial.print("   pumpCurrent ");
+  Serial.println(pumpCurrent);
+*/
   
   delay(10);
   
@@ -234,26 +264,40 @@ void requestEvent() {
 
 
 int getFakeAirFlow(int score){
+  int flow = 0;
   if(FAN_SPEED == 1)
-    return 405 - score/10;
+    flow = (FLOW_SPEED_1 - getNovelty(score)) >> 2; // divido per due senno fa overflow
   else if(FAN_SPEED == 2)
-    return 520 - score/10;
+    flow =  (FLOW_SPEED_2 - getNovelty(score)) >> 2; // divido per due senno fa overflow
   else 
-    return 0;
+    flow = 0;
+    
+  return flow;
   
 }
 
-int getFakePowerConsumption(){
+int getFakePowerConsumption(int score){
   if(FAN_SPEED == 1)
-    return 30 + score/50;
+    return CONSUMPTION_SPEED_1 + getNovelty(score) / 10;
   else if(FAN_SPEED == 2)
-    return 60 + score/50;
+    return CONSUMPTION_SPEED_2 + getNovelty(score) / 10;
   else 
     return 0;
   }
 
 int getNovelty(int score){
-  return score;
+  int novelty = 0;
+  if(score < ALERT_TH){
+    novelty = map(score, 0, ALERT_TH, 0, 90);
+    }
+  else if(score > ALERT_TH && score < ALARM_TH){
+    novelty = map(score, ALERT_TH, ALARM_TH, 90, 100);
+    }
+  else{
+    novelty = 100;
+    }
+  
+  return novelty;
   }
 
 
