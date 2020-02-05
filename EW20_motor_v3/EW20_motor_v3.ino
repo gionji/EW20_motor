@@ -19,7 +19,7 @@
 
 // Parametri per la soglia
 #define SCORE_DECREASE  4
-#define NOVELTY_FACTOR  0.3
+#define NOVELTY_FACTOR  0.22
 #define ALERT_TH       230
 #define ALARM_TH       700
 #define FLAME_VARIANCE 200
@@ -111,7 +111,7 @@ void setup() {
   
   strip.show();
   setFanSpeed(0);
-  MAX_DISTANCE = 17;//getMaximumDistanceInTheBox(8);
+  MAX_DISTANCE = getMaximumDistanceInTheBox();
   
   Serial.print("MAX DIST ");
   Serial.println(MAX_DISTANCE);
@@ -129,13 +129,13 @@ void loop() {
   pumpRpm     = (DATA_TYPE) getFakeAirFlow( score );
   pumpNovelty = (DATA_TYPE) getNovelty( score );
   pumpCurrent = (DATA_TYPE) getFakePowerConsumption(score);
-  pumpTemp    = (DATA_TYPE) sensors.getTempCByIndex(0);
+  pumpTemp    = (DATA_TYPE) dht.readTemperature() + 6;
   extTemp     = (DATA_TYPE) dht.readTemperature(); // DHT11
   extHum      = (DATA_TYPE) dht.readHumidity(); //  DHT11
   flooding    = (DATA_TYPE) analogRead(FLOODING_PIN);
   pumpFlux    = (DATA_TYPE) getFakeAirFlow( score );
 
-  
+/*  
   Serial.print("SPEED:  ");
   Serial.print(FAN_SPEED); 
   Serial.print("   score: ");
@@ -146,7 +146,7 @@ void loop() {
   Serial.print(pumpNovelty);
   Serial.print("   pumpCurrent ");
   Serial.println(pumpCurrent);
-
+*/
   VALUE_PUMP_RPM      = (DATA_TYPE) (pumpRpm     >> 2 );
   VALUE_PUMP_NOVELTY  = (DATA_TYPE) (pumpNovelty >> 0);
   VALUE_PUMP_TEMP     = (DATA_TYPE) pumpTemp;
@@ -178,7 +178,7 @@ int updateScore(int distance){
   int obclusion = MAX_DISTANCE - distance;
   if(obclusion<0) obclusion = 0;
 
-  if(obclusion > 2)
+  if(obclusion > 2 && !EMERGENCY_STOP)
     score += ((int)(float)obclusion * NOVELTY_FACTOR);
   else
     score -= SCORE_DECREASE;
@@ -206,12 +206,12 @@ void systemDynamics(){
   // GIALLOOOOO
   else if(score > ALERT_TH && !EMERGENCY_STOP){
     setFanSpeed(1);
-    flame(200, 200, 0);
+    flame(200, 0, 0);
   } 
   else { 
     if(!EMERGENCY_STOP)
       setFanSpeed(2);    
-    flame(score, 0, 200- score);
+    flame(score, 0, 200 - score);
   }
 
   if(score == 0)
@@ -361,6 +361,7 @@ void flame(int r, int g, int b){
     int flicker = random(0,FLAME_VARIANCE);
     int r1 = r-flicker;
     int g1 = g-flicker;
+    
     int b1 = b-flicker;
     if(g1<0) g1=0;
     if(r1<0) r1=0;
@@ -388,6 +389,19 @@ int getIrDistance(){
   return distance;
   }
 
+
+int getMaximumDistanceInTheBox(){
+  int mean = 0;
+  Serial.println("Calibrating maximum box depth...");
+  for(int i =0; i<30; i++){
+      int dist = ultrasonic.MeasureInCentimeters();
+      Serial.println(dist);
+      mean += dist;
+      delay(100);
+    }
+  return mean / 30;  
+  
+  }
   
 int setFanSpeed(int fanSpeed){
   FAN_SPEED = fanSpeed;
