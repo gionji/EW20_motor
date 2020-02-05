@@ -99,21 +99,37 @@ def writeSensor( data ):
 
 # Write to virtual sensor
 def writeSensorOld( data ):
-    print(data)
+    # print(data)
 
-    rpm, novelty,  p_temp, p_curr, p_flow, e_temp, e_hum = data
+    rpm, novelty,  p_temp, p_curr, p_flow, e_temp, e_hum = data 
+
+    outputData = dict()
+
+    outputData['faultActive'] = int(0) if novelty < 50 else int(1)
+    outputData['novelty']     = float(novelty /100)
+    outputData['rpm']         = float(novelty / 100)
+    outputData['tempEnv']     = float(e_temp)
+    outputData['humEnv']      = int(e_hum)
+    outputData['motorTemp']   = float(p_temp)
+    outputData['airFlow']     = int(p_flow * 8)
+    outputData['current']     = int(p_curr * 4)
+    outputData['flooding']    = int(0) if p_curr < 10 else int(1) 
+
+    print(outputData)
 
     out_file = open('/var/www/cgi-bin/PUMP', 'w')
 
-    out_file.write(pump_output % (    int(0) if novelty < 50 else int(1),
-                                      int(novelty / 100),
-                                      int( novelty / 100) ,
-                                      float(e_temp),
-                                      int(e_hum),
-                                      float(p_temp),
-                                      int(p_flow * 4),
-                                      int(p_curr * 4),
-                                      int(0) if novelty < 50 else int(1)))
+    out_file.write(pump_output % ( outputData['faultActive'],
+                                   outputData['novelty'] ,
+                                   outputData['rpm'] ,
+                                   outputData['tempEnv'] ,
+                                   outputData['humEnv'] ,
+                                   outputData['motorTemp'] ,
+                                   outputData['airFlow'] ,
+                                   outputData['current'] ,
+                                   outputData['flooding'] 
+                                 )
+                  )
     out_file.close()
 
 
@@ -128,7 +144,7 @@ def main():
         except Exception as e:
             print( e )
 
-        time.sleep(0.25)
+        time.sleep(1.0)
 
 
 
