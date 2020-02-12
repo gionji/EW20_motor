@@ -86,13 +86,13 @@ def writeSensor( data ):
 
     # Write to virtual sensor
     out_file = open('/var/www/cgi-bin/PUMP', 'w')
-    out_file.write(pump_output % ( int(novelty),
-                                   int(rpm) * 4,
-                                   int(e_temp),
-                                   int(e_hum)   ,
-                                   int(p_temp),
-                                   int(p_flow) * 4  ,
-                                   int(p_curr) * 4
+    out_file.write(pump_output % ( int( round(novelty) ),
+                                   int( round(rpm* 4)  ),
+                                   int( e_temp ),
+                                   int( e_hum ) ,
+                                   int( p_temp ),
+                                   int( p_flow ) * 4 ,
+                                   int( p_curr ) * 4 
                                  )
                   )
 
@@ -111,7 +111,7 @@ def writeSensorOld( data ):
     outputData['tempEnv']     = float(e_temp)
     outputData['humEnv']      = int(e_hum)
     outputData['motorTemp']   = float(p_temp)
-    outputData['airFlow']     = int(p_flow * 8)
+    outputData['airFlow']     = int(p_flow * 16)
     outputData['current']     = int(p_curr * 4)
     outputData['flooding']    = int(0) if p_curr < 10 else int(1) 
 
